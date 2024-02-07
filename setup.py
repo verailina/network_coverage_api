@@ -12,14 +12,15 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Fields marked as "Optional" may be commented out.
 
 setup_params = dict(
-    name="network-coverage-api",
+    name="network_coverage_api",
     version="0.1",
     description="Network coverage API",
     url="https://https://github.com/verailina/network_coverage_api",
     author="Vera Ilina",
     author_email="vilina.develop@gmail.com",
-    keywords="api",
-    packages=find_packages(exclude=["unit_tests"]),
+    keywords="network_coverage_api",
+    package_dir={"": "src"},
+    packages=find_packages("src"),
     # python_requires=[],
     install_requires=[],  # Optional
     extras_require={
