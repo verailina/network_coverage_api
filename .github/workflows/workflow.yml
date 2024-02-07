@@ -40,3 +40,8 @@ jobs:
         run: |
           python -c "import sys; print(sys.version)"
           pip list
+
+      - name: Test with pytest
+        run: |
+          pip install pytest pytest-cov
+          pytest unit_tests --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
