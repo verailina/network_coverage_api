@@ -22,16 +22,10 @@ def build_preprocessed_data(raw_network_file: str):
 
     for operator in Operator:
         logger.info(f"Building clusters for {operator.name}")
-        operator_data = preprocessed_data.loc[operator.value].reset_index(drop=True)
-        lat_range = SeriesRange(operator_data["latitude"])
-        lon_range = SeriesRange(operator_data["longitude"])
-        cluster_builder = ClusterBuilder(lat_range, lon_range, cluster_size=settings.cluster_size)
-
-        operator_data["cluster"] = operator_data.apply(lambda row: cluster_builder.get_cluster_id(
-            cluster_builder.get_point_cluster(row.latitude, row.longitude)), axis=1)
-        operator_data.set_index("cluster", inplace=True)
+        operator_data = preprocessed_data.loc[operator.value]
+        cluster_builder = ClusterBuilder(operator_data, cluster_size=settings.CLUSTER_SIZE)
         operator_data_path = get_data_path(f"{operator.name}_datasource.csv")
-        operator_data.to_csv(str(operator_data_path))
+        cluster_builder.data.to_csv(str(operator_data_path))
 
 
 @timeit

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import geopy.distance
 from network_coverage_api.api.geocoding import geocode_reverse
 from network_coverage_api.config import settings
+import math
 
 logger = get_logger()
 
@@ -18,11 +19,20 @@ class SeriesRange:
 
 
 class ClusterBuilder:
-    def __init__(self, lat_range: SeriesRange, lon_range: SeriesRange, cluster_size: float = 0.5):
+    def __init__(self, data: pd.DataFrame, cluster_size: float = 0.5):
+        self.data = data.reset_index(drop=True)
+        lat_range = SeriesRange(data["latitude"])
+        lon_range = SeriesRange(data["longitude"])
         self.lat_range = lat_range
         self.lon_range = lon_range
         self.cluster_size = cluster_size
-        self.row_size = int(self.lon_range.range_len / self.cluster_size)
+        self.col_size = math.ceil(self.lon_range.range_len / self.cluster_size)
+        self.row_size = math.ceil(self.lat_range.range_len / self.cluster_size)
+
+        if "cluster" not in data.columns:
+            self.data["cluster"] = self.data.apply(lambda row: self.get_cluster_id(
+                self.get_point_cluster(row.latitude, row.longitude)), axis=1)
+            self.data.set_index("cluster", inplace=True)
 
     def get_cluster_id(self, cluster: Tuple[int, int]) -> int:
         return cluster[0] * self.row_size + cluster[1]
@@ -32,15 +42,40 @@ class ClusterBuilder:
         cluster_col = int((lon - self.lon_range.min_val) // self.cluster_size)
         return cluster_row, cluster_col
 
+    def get_target_clusters(self, point: Tuple[float, float], cluster: Tuple[int, int]) -> List[Tuple[int, int]]:
+        clusters = [cluster]
+        intersection = 0.01
+        # Close to the cluster right border
+        if (abs(point[0] - ((cluster[0] + 1.) * self.cluster_size + self.lat_range.min_val)) < intersection
+                and cluster[0] + 1. < self.row_size):
+            clusters.append((cluster[0] + 1., cluster[1]))
+        # Close to the cluster left border
+        elif (abs(point[0] - (cluster[0] * self.cluster_size) + self.lat_range.min_val) < intersection
+              and cluster[0] - 1. > 0):
+            clusters.append((cluster[0] - 1., cluster[1]))
+
+        # Close to the top cluster border
+        if (abs(point[1] - ((cluster[1] + 1.) * self.cluster_size) + self.lon_range.min_val) < intersection
+                and cluster[1] + 1. < self.col_size):
+            clusters.append((cluster[0], cluster[1] + 1.))
+        # Close to the bottom cluster border
+        elif (abs(point[1] - ((cluster[1]) * self.cluster_size) + self.lon_range.min_val) < intersection
+              and cluster[1] - 1. > 0):
+            clusters.append((cluster[0], cluster[1] - 1.))
+        return clusters
+
+    def visualize_clusters(self) -> None:
+        df = self.data.reset_index()
+        df.plot.scatter(x="longitude", y="latitude", c="cluster")
+        plt.show()
+
+
 
 class NetworkDatasource:
     def __init__(self, operator: Operator, cluster_size: float = 0.5, radius: float = 0.01):
         self.operator = operator
-        self.data = self.load_datasource(operator)
-
-        lat_range = SeriesRange(self.data["latitude"])
-        lon_range = SeriesRange(self.data["longitude"])
-        self.cluster_builder = ClusterBuilder(lat_range, lon_range, cluster_size)
+        data = self.load_datasource(operator)
+        self.cluster_builder = ClusterBuilder(data, cluster_size=cluster_size)
         self.radius = radius
 
     @staticmethod
@@ -57,22 +92,15 @@ class NetworkDatasource:
         (row, col) = self.cluster_builder.get_point_cluster(latitude, longitude)
         logger.info(f"Point cluster: {row, col}, id: {self.cluster_builder.get_cluster_id((row, col))}")
         neighbors = []
-        target_clusters = [(row, col), (row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
-        max_cluster = self.data.index.max()
+        target_clusters = self.cluster_builder.get_target_clusters((latitude, longitude), (row, col))
         for (row, col) in target_clusters:
-            radius = self.radius
-            while radius < self.cluster_builder.cluster_size:
-                cluster_id = self.cluster_builder.get_cluster_id((row, col))
-                if row < 0 or col < 0 or cluster_id > max_cluster:
-                    continue
-                df = self.data.loc[cluster_id]
-                df = df[abs(latitude - df["latitude"]) < radius]
-                df = df[abs(longitude - df["longitude"]) < radius]
+            cluster_id = self.cluster_builder.get_cluster_id((row, col))
+            if cluster_id in self.cluster_builder.data.index:
+                df = self.cluster_builder.data.loc[cluster_id]
                 logger.info(f"Added {len(df)} points from the cluster {(row, col)}, cluster_id: {cluster_id}")
                 neighbors += df.to_dict(orient="records")
                 if len(df) > 0:
                     break
-                radius *= 2
         logger.info(f"Points neighborhood contains: {len(neighbors)} points")
         return neighbors
 
@@ -100,14 +128,6 @@ class NetworkDatasource:
             best_neighbour.address = neighbor_location.address if neighbor_location else None
         return best_neighbour
 
-    def visualize_clusters(self) -> None:
-        df = self.data.reset_index()
-        df = df.where(df["cluster"] > 320)
-        df = df.where(df["cluster"] < 500)
-        df.plot.scatter(x="longitude", y="latitude", c="cluster")
-        #plt.xlim(2, 4)
-        plt.show()
-
 
 class NetworkDatasourceLoader:
     def __init__(self):
@@ -122,4 +142,4 @@ class NetworkDatasourceLoader:
 
 if __name__ == "__main__":
     network_datasource = NetworkDatasource(Operator.Bouygue, cluster_size=settings.CLUSTER_SIZE)
-    network_datasource.visualize_clusters()
+    network_datasource.cluster_builder.visualize_clusters()

@@ -9,6 +9,7 @@ from geopy.exc import GeocoderServiceError
 logger = get_logger()
 
 
+@timeit
 def geocode(address: Address, n_tries: int = 5) -> Location | None:
     geocoder = BANFrance()
     for _ in range(n_tries):
@@ -22,6 +23,7 @@ def geocode(address: Address, n_tries: int = 5) -> Location | None:
             logger.error(f"Failed to geocode address {address.full_address}, error: {e}")
 
 
+@timeit
 def geocode_reverse(latitude: float, longitude: float, n_tries: int = 5) -> Location | None:
     geocoder = BANFrance()
     for _ in range(n_tries):
@@ -44,3 +46,5 @@ def lambert93_to_gps(x: float, y: float):
     transformer = Transformer.from_crs(LAMBERT93_CODE, WGS84_CODE, always_xy=True)
     longitude, latitude = transformer.transform(x, y)
     return longitude, latitude
+
+
