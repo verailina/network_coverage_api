@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_serializer
 
 @dataclass
 class Address:
@@ -23,15 +23,15 @@ class Operator(Enum):
     Bouygue = 20820
 
 
-class Network(str, Enum):
-    N2G = "2G"
-    N3G = "3G"
-    N4G = "4G"
-
-
 class NetworkCoverage(BaseModel):
-    operator: str
-    coverage: dict[Network, bool]
+    operator: Operator
+    N2G: bool = Field(serialization_alias="2G")
+    N3G: bool = Field(serialization_alias="3G")
+    N4G: bool = Field(serialization_alias="4G")
+
+    @field_serializer("operator")
+    def serialize_group(self, operator: Operator, _info):
+        return operator.name
 
 
 class Location(BaseModel):

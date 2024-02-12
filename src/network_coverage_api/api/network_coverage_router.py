@@ -21,7 +21,6 @@ async def get_network_coverage(
     return _get_network_coverage(address)
 
 
-
 @NetworkCoverageRouter.get("/detailed/", response_model=List[NetworkCoverageDetailed])
 async def get_detailed_network_coverage(
         street_number: str | None = None,

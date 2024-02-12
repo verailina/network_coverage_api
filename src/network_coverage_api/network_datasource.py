@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List, Tuple
-from network_coverage_api.api.schemas import Operator, Network, NetworkCoverageDetailed, Location
+from network_coverage_api.api.schemas import Operator, NetworkCoverageDetailed, Location
 from network_coverage_api.utils import timeit, get_logger, get_data_path
 import matplotlib.pyplot as plt
 import geopy.distance
@@ -69,7 +69,6 @@ class ClusterBuilder:
         plt.show()
 
 
-
 class NetworkDatasource:
     def __init__(self, operator: Operator, cluster_size: float = 0.5, radius: float = 0.01):
         self.operator = operator
@@ -113,15 +112,15 @@ class NetworkDatasource:
             logger.debug(f"Distance between: target: {(latitude, longitude)} and neighbor: {neighbor_pos}: {distance} km")
             if best_neighbor is None or distance < best_neighbor.distance:
                 best_neighbor = NetworkCoverageDetailed(
-                            operator=self.operator.name,
+                            operator=self.operator,
+                            N2G=bool(neighbor.get("2G")),
+                            N3G=bool(neighbor.get("3G")),
+                            N4G=bool(neighbor.get("4G")),
                             distance=distance,
                             closest_location=Location(
                                 latitude=neighbor_pos[0],
                                 longitude=neighbor_pos[1],
-                            ),
-                            coverage={
-                                network: neighbor.get(network.value) for network in Network
-                            }
+                            )
                         )
         return best_neighbor
 
