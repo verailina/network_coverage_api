@@ -2,6 +2,7 @@ from enum import Enum
 from dataclasses import dataclass
 from pydantic import BaseModel, Field, field_serializer
 
+
 @dataclass
 class Address:
     street_number: str | None = None
@@ -37,7 +38,7 @@ class NetworkCoverage(BaseModel):
 class Location(BaseModel):
     latitude: float
     longitude: float
-    address: str = None
+    address: str | None = None
 
 
 class NetworkCoverageDetailed(NetworkCoverage):

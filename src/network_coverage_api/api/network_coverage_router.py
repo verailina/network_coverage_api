@@ -3,11 +3,11 @@ from typing import List
 from network_coverage_api.utils import get_logger
 from network_coverage_api.api.schemas import Address, Operator, NetworkCoverage, NetworkCoverageDetailed, Location
 from network_coverage_api.api.geocoding import geocode, geocode_reverse
-from network_coverage_api.network_datasource import NetworkDatasourceLoader
+from network_coverage_api.map_engine.map_searcher import MapSearcherFactory, MapPoint
 
 
 logger = get_logger()
-network_datasource_loader = NetworkDatasourceLoader()
+map_searcher_factory = MapSearcherFactory()
 NetworkCoverageRouter = APIRouter()
 
 
@@ -39,23 +39,35 @@ def _get_network_coverage(address: Address, detailed: bool = False) -> List[Netw
         logger.info(f"Address not found: {address}")
         return result
 
+    target_point = MapPoint(latitude=location.latitude, longitude=location.longitude)
     for operator in Operator:
-        datasource = network_datasource_loader.get_data_source(operator)
-        coverage = datasource.find_closest_point(
-            latitude=location.latitude, longitude=location.longitude)
-        logger.info(f"Network coverage for {(location.latitude, location.longitude)}: {coverage}")
-        if coverage is not None:
-            result.append(coverage)
-
-    if detailed:
-        for coverage in result:
-            coverage.target_location = Location(
+        searcher = map_searcher_factory.get_map_searcher(operator)
+        closest_data = searcher.find_closest_point_data(target_point)
+        logger.info(f"Network coverage for {target_point}: {closest_data}")
+        if closest_data is None:
+            logger.info(f"No {operator.name} data found for {address}")
+            continue
+        network_coverage = dict(
+            operator=operator,
+            N2G=closest_data.data.get("2G"),
+            N3G=closest_data.data.get("3G"),
+            N4G=closest_data.data.get("4G"),
+        )
+        if not detailed:
+            result.append(NetworkCoverage(**network_coverage))
+        else:
+            network_coverage["distance"] = closest_data.distance
+            network_coverage["target_location"] = Location(
                 address=location.address,
                 latitude=location.latitude,
                 longitude=location.longitude
             )
-            neighbor_location = geocode_reverse(coverage.closest_location.latitude, coverage.closest_location.longitude)
-            coverage.closest_location.address = neighbor_location.address if neighbor_location else None
+            latitude, longitude = closest_data.point.latitude, closest_data.point.longitude
+            neighbor_location = geocode_reverse(latitude, longitude)
+            network_coverage["closest_location"] = Location(
+                address=neighbor_location.address if neighbor_location else None,
+                latitude=latitude,
+                longitude=longitude
+            )
+            result.append(network_coverage)
     return result
-
-

@@ -1,7 +1,7 @@
 from network_coverage_api.utils import get_logger, timeit, get_data_path
 from network_coverage_api.api.schemas import Operator
 from network_coverage_api.api.geocoding import lambert93_to_gps
-from network_coverage_api.network_datasource import ClusterBuilder, SeriesRange
+from network_coverage_api.map_engine.map_searcher import MapSearcher, MapPoint
 import pandas as pd
 from network_coverage_api.config import settings
 
@@ -23,9 +23,13 @@ def build_preprocessed_data(raw_network_file: str):
     for operator in Operator:
         logger.info(f"Building clusters for {operator.name}")
         operator_data = preprocessed_data.loc[operator.value]
-        cluster_builder = ClusterBuilder(operator_data, cluster_size=settings.CLUSTER_SIZE)
+        searcher = MapSearcher(operator_data, cluster_size=settings.CLUSTER_SIZE)
+        operator_data["cluster"] = operator_data.apply(lambda row: searcher.get_cluster_id(
+                searcher.get_point_cluster(MapPoint(row.latitude, row.longitude))), axis=1)
+        operator_data.set_index("cluster", inplace=True)
+
         operator_data_path = get_data_path(f"{operator.name}_datasource.csv")
-        cluster_builder.data.to_csv(str(operator_data_path))
+        operator_data.to_csv(str(operator_data_path))
 
 
 @timeit

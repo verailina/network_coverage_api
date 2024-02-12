@@ -1,4 +1,4 @@
-from network_coverage_api.network_datasource import ClusterBuilder, SeriesRange
+from network_coverage_api.map_engine.map_searcher import SeriesRange, MapSearcher
 import pandas as pd
 from pytest import fixture
 import pytest
@@ -8,7 +8,7 @@ import pytest
 def cluster_builder():
     lat = pd.Series(range(10)) + 10
     lon = pd.Series(range(5)) + 5
-    return ClusterBuilder(SeriesRange(lat), SeriesRange(lon))
+    return MapSearcher(SeriesRange(lat), SeriesRange(lon))
 
 
 def test_cluster_builder_init(cluster_builder):
