@@ -32,7 +32,15 @@ class Network(str, Enum):
 class NetworkCoverage(BaseModel):
     operator: str
     coverage: dict[Network, bool]
+
+
+class Location(BaseModel):
     latitude: float
     longitude: float
-    distance: float
     address: str = None
+
+
+class NetworkCoverageDetailed(NetworkCoverage):
+    distance: float
+    closest_location: Location = None
+    target_location: Location = None

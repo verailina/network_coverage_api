@@ -1,10 +1,9 @@
 import pandas as pd
 from typing import List, Tuple
-from network_coverage_api.api.schemas import Operator, NetworkCoverage, Network
+from network_coverage_api.api.schemas import Operator, Network, NetworkCoverageDetailed, Location
 from network_coverage_api.utils import timeit, get_logger, get_data_path
 import matplotlib.pyplot as plt
 import geopy.distance
-from network_coverage_api.api.geocoding import geocode_reverse
 from network_coverage_api.config import settings
 import math
 
@@ -105,28 +104,26 @@ class NetworkDatasource:
         return neighbors
 
     @timeit
-    def find_closest_point(self, latitude: float, longitude: float) -> NetworkCoverage | None:
-        best_neighbour = None
+    def find_closest_point(self, latitude: float, longitude: float) -> NetworkCoverageDetailed | None:
+        closest_location, best_neighbor = None, None
         neighbors = self.get_point_neighbors(latitude, longitude)
         for neighbor in neighbors:
             neighbor_pos = (neighbor["latitude"], neighbor["longitude"])
             distance = geopy.distance.distance((latitude, longitude), neighbor_pos).km
             logger.debug(f"Distance between: target: {(latitude, longitude)} and neighbor: {neighbor_pos}: {distance} km")
-            if best_neighbour is None or distance < best_neighbour.distance:
-                best_neighbour = NetworkCoverage(
-                    operator=self.operator.name,
-                    distance=distance,
-                    latitude=neighbor_pos[0],
-                    longitude=neighbor_pos[1],
-                    coverage={
-                        network: neighbor.get(network.value) for network in Network
-                    }
-                )
-
-        if best_neighbour is not None:
-            neighbor_location = geocode_reverse(best_neighbour.latitude, best_neighbour.longitude)
-            best_neighbour.address = neighbor_location.address if neighbor_location else None
-        return best_neighbour
+            if best_neighbor is None or distance < best_neighbor.distance:
+                best_neighbor = NetworkCoverageDetailed(
+                            operator=self.operator.name,
+                            distance=distance,
+                            closest_location=Location(
+                                latitude=neighbor_pos[0],
+                                longitude=neighbor_pos[1],
+                            ),
+                            coverage={
+                                network: neighbor.get(network.value) for network in Network
+                            }
+                        )
+        return best_neighbor
 
 
 class NetworkDatasourceLoader:
