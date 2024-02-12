@@ -1,5 +1,4 @@
-import importlib.resources
-from network_coverage_api.utils import get_logger, timeit
+from network_coverage_api.utils import get_logger, timeit, get_data_path
 from network_coverage_api.api.schemas import Operator
 from network_coverage_api.api.geocoding import lambert93_to_gps
 from network_coverage_api.network_datasource import ClusterBuilder, SeriesRange
@@ -11,10 +10,15 @@ logger = get_logger()
 
 @timeit
 def build_preprocessed_data(raw_network_file: str):
-    raw_data = load_raw_network_data(raw_network_file)
-    raw_data.dropna(inplace=True)
-    preprocessed_data = convert_coordinates(raw_data)
-    dump_dataframe(preprocessed_data, "network_data_converted.csv")
+    preprocessed_data_file = get_data_path("network_data_converted.csv")
+    if preprocessed_data_file.exists():
+        preprocessed_data = pd.read_csv(preprocessed_data_file, index_col=0)
+    else:
+        network_data_path = get_data_path(raw_network_file)
+        raw_data = pd.read_csv(str(network_data_path), sep=';', index_col=0)
+        raw_data.dropna(inplace=True)
+        preprocessed_data = convert_coordinates(raw_data)
+        preprocessed_data.to_csv(str(preprocessed_data_file))
 
     for operator in Operator:
         logger.info(f"Building clusters for {operator.name}")
@@ -26,15 +30,8 @@ def build_preprocessed_data(raw_network_file: str):
         operator_data["cluster"] = operator_data.apply(lambda row: cluster_builder.get_cluster_id(
             cluster_builder.get_point_cluster(row.latitude, row.longitude)), axis=1)
         operator_data.set_index("cluster", inplace=True)
-        dump_dataframe(operator_data, f"{operator.name}_datasource.csv")
-
-@timeit
-def load_raw_network_data(file_name: str) -> pd.DataFrame:
-    data_dir = importlib.resources.files("network_coverage_api.data")
-    with importlib.resources.as_file(data_dir) as data_dir:
-        network_data_path = data_dir.joinpath(file_name)
-        network_data = pd.read_csv(str(network_data_path), sep=';', index_col=0)
-    return network_data
+        operator_data_path = get_data_path(f"{operator.name}_datasource.csv")
+        operator_data.to_csv(str(operator_data_path))
 
 
 @timeit
@@ -47,13 +44,6 @@ def convert_coordinates(network_data: pd.DataFrame) -> pd.DataFrame:
     df.drop(axis=1, inplace=True, columns="gps")
     #df.sort_values(["latitude", "longitude"], inplace=True)
     return df
-
-
-def dump_dataframe(operator_data: pd.DataFrame, data_file_name: str) -> None:
-    data_dir = importlib.resources.files("network_coverage_api.data")
-    with importlib.resources.as_file(data_dir) as data_dir:
-        network_data_path = data_dir.joinpath(data_file_name)
-        operator_data.to_csv(str(network_data_path))
 
 
 if __name__ == "__main__":
