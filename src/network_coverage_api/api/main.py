@@ -3,24 +3,36 @@ from typing import List
 from fastapi import FastAPI
 from network_coverage_api.utils import get_logger
 from network_coverage_api.api.schemas import Address, Operator, NetworkCoverage
-from geocoding import geocode
-from network_coverage_api.network_datasource import network_datasource_map
+from network_coverage_api.api.geocoding import geocode
+from network_coverage_api.network_datasource import NetworkDatasourceLoader
 
 logger = get_logger()
 
 app = FastAPI()
 
+network_datasource_loader = NetworkDatasourceLoader()
 
 
-@app.get("/network_coverage")
-async def network_coverage(street_number: str, street_name: str, city: str, postal_code: str):
+@app.get("/network_coverage", response_model=List[NetworkCoverage])
+async def network_coverage(street_number: str | None = None,
+                           street_name: str | None = None,
+                           city: str | None = None,
+                           postal_code: str | None = None):
     address = Address(street_name=street_name, street_number=street_number, city=city, postal_code=postal_code)
     location = geocode(address)
     result = []
+    logger.info(f"Geocoded address: {address}: {location}")
+    if location is None:
+        logger.info(f"Address not found: {address}")
+        return result
+
     for operator in Operator:
-        coverage = network_datasource_map[operator].find_closest_point(latitude=location.latitude, longitude=location.longitude)
+        datasource = network_datasource_loader.get_data_source(operator)
+        coverage = datasource.find_closest_point(
+            latitude=location.latitude, longitude=location.longitude)
         logger.info(f"Network coverage for {(location.latitude, location.longitude)}: {coverage}")
-        result.append(coverage)
+        if coverage is not None:
+            result.append(coverage)
     return result
 
 

@@ -4,14 +4,16 @@ from pydantic import BaseModel
 
 @dataclass
 class Address:
-    street_name: str
-    street_number: str
-    city: str
-    postal_code: str
+    street_number: str | None = None
+    street_name: str | None = None
+    city: str | None = None
+    postal_code: str | None = None
 
     @property
     def full_address(self) -> str:
-        return f"{self.street_number} {self.street_name} {self.city} {self.postal_code}"
+        address = [self.street_number, self.street_name, self.city, self.postal_code]
+        address = filter(lambda a: a is not None, address)
+        return " ".join(address)
 
 
 class Operator(Enum):

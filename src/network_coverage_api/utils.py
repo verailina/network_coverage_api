@@ -4,8 +4,11 @@ from time import time
 
 
 def get_logger(level=logging.INFO):
-    logging.basicConfig()
-    logger = logging.getLogger(__name__)
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        level=level,
+        datefmt="%Y-%m-%d %H:%M:%S",)
+    logger = logging.getLogger("network-coverage-api")
     logger.setLevel(level)
     return logger
 
