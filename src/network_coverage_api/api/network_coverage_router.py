@@ -72,5 +72,5 @@ def _get_network_coverage(address: Address, detailed: bool = False) -> List[Netw
                 latitude=latitude,
                 longitude=longitude
             )
-            result.append(network_coverage)
+            result.append(NetworkCoverageDetailed(**network_coverage))
     return result
