@@ -165,14 +165,38 @@ for this point.
 3. For the detailed endpoint, utilize `geopy.geocoders.BANFrance` to obtain the address corresponding to the closest 
 point.
 
+### Clusterization
+
 To streamline the search through the network coverage data, we implement clustering by applying a grid with a step 
 size of 0.5 along both latitude and longitude coordinates. Each data point is assigned a cluster ID using 
-the network_coverage_api.map_engine.map_searcher module, and the clustered data is stored in 
+the `network_coverage_api.map_engine.map_searcher` module, and the clustered data is stored in 
 `network_coverage_api/data/<Operator>_datasource.csv`.
 
 When searching for a target location, we first compute the cluster for the target (latitude, longitude) point and 
 then find the closest point to the target within this cluster using the `MapSearcher` class. If the target point is 
 close to the cluster border, we also consider the neighboring cluster in the search process.
 
+Clusters can be computed by running `network_coverage_api.map_engine.data_preprocessor`:
+```python
+from network_coverage_api.map_engine.data_preprocessor import get_preprocessed_data, build_clustered_data
+data_source_filename = (
+    "2018_01_Sites_mobiles_2G_3G_4G_France_metropolitaine_L93.csv"
+)
+preprocessed_data = get_preprocessed_data(data_source_filename)
+build_clustered_data(preprocessed_data)
+```
+The `cluster_size` parameter should be set in `network_coverage_api.settings.toml`.
+Computed clusters can be visualized by running the script in  `network_coverage_api.map_engine.map_data`:
+```python
+from network_coverage_api.map_engine.map_data import MapData, Operator
 
+map_data = MapData()
+map_data.visualize_clusters(Operator.Free)
+```
+For a more visual representation, let's see the clusters for `cluster_size=2.0`:
 
+![clusters_for_2.0]([file](https://github.com/verailina/network_coverage_api/blob/main/src/network_coverage_api/data/images/cluster_size_2.png).
+
+For the recommended default `cluster_size=0.5`, the cluster will look like this:
+
+![clusters_for_0_5]([file](https://github.com/verailina/network_coverage_api/blob/main/src/network_coverage_api/data/images/cluster_size_0_5.png).
