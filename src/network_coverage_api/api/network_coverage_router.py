@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Query
 from typing import List
 from network_coverage_api.utils import get_logger
 from network_coverage_api.api.schemas import (
@@ -17,13 +19,16 @@ logger = get_logger()
 NetworkCoverageRouter = APIRouter()
 map_data = MapData()
 
+POSTAL_CODE_PATTERN = r'^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$'
+STREET_NUMBER_PATTERN = r'^[1-9]+\d*\w*$'
+
 
 @NetworkCoverageRouter.get("/", response_model=List[NetworkCoverage])
 async def get_network_coverage(
-    street_number: str | None = None,
+    street_number: Annotated[str | None, Query(pattern=STREET_NUMBER_PATTERN)] = None,
     street_name: str | None = None,
+    postal_code: Annotated[str | None, Query(pattern=POSTAL_CODE_PATTERN)] = None,
     city: str | None = None,
-    postal_code: str | None = None,
 ):
     address = Address(
         street_name=street_name,
@@ -36,10 +41,10 @@ async def get_network_coverage(
 
 @NetworkCoverageRouter.get("/detailed/", response_model=List[NetworkCoverageDetailed])
 async def get_detailed_network_coverage(
-    street_number: str | None = None,
+    street_number: Annotated[str | None, Query(pattern=STREET_NUMBER_PATTERN)] = None,
     street_name: str | None = None,
+    postal_code: Annotated[str | None, Query(pattern=POSTAL_CODE_PATTERN)] = None,
     city: str | None = None,
-    postal_code: str | None = None,
 ):
     address = Address(
         street_name=street_name,

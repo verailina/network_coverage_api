@@ -1,5 +1,6 @@
 from dynaconf import Dynaconf
 
 settings = Dynaconf(
-    settings_files=["network_coverage_api/settings.toml"],
+    settings_files=["src/network_coverage_api/settings.toml",
+                    "network_coverage_api/settings.toml"],
 )

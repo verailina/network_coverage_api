@@ -54,7 +54,7 @@ class MapConfig:
     def height(self) -> float:
         if self._height is None:
             self._height = self.right_border.latitude - self.left_border.latitude
-        return self._width
+        return self._height
 
     @staticmethod
     def from_series(latitudes: pd.Series, longitudes: pd.Series) -> "MapConfig":
@@ -71,7 +71,7 @@ class MapSearcher:
         self.row_num = math.ceil(self.map_config.height / self.cluster_size)
 
     def get_cluster_id(self, cluster: Cluster) -> int:
-        return cluster.row * self.row_num + cluster.column
+        return cluster.row * self.col_num + cluster.column
 
     def get_point_cluster(self, point: MapPoint) -> Cluster:
         cluster_row = int(
@@ -115,26 +115,26 @@ class MapSearcher:
             self.get_border_distance(point, cluster, "latitude", 1) < intersection
             and cluster.row + 1.0 < self.row_num
         ):
-            clusters.append((cluster.row + 1.0, cluster.column))
+            clusters.append(Cluster(cluster.row + 1, cluster.column))
         # Close to the cluster left border
         elif (
             self.get_border_distance(point, cluster, "latitude", 0) < intersection
             and cluster.row - 1.0 > 0
         ):
-            clusters.append((cluster.row - 1.0, cluster.column))
+            clusters.append(Cluster(cluster.row - 1, cluster.column))
 
         # Close to the top cluster border
         if (
             self.get_border_distance(point, cluster, "longitude", 1) < intersection
             and cluster.column + 1.0 < self.col_num
         ):
-            clusters.append((cluster.row, cluster.column + 1.0))
+            clusters.append(Cluster(cluster.row, cluster.column + 1))
         # Close to the bottom cluster border
         elif (
             self.get_border_distance(point, cluster, "longitude", 0) < intersection
             and cluster.column - 1.0 > 0
         ):
-            clusters.append((cluster.row, cluster.column - 1.0))
+            clusters.append(Cluster(cluster.row, cluster.column - 1))
         return clusters
 
     def get_point_neighbors(self, point: MapPoint, data: pd.DataFrame) -> List[dict]:
@@ -150,8 +150,6 @@ class MapSearcher:
                     f"Added {len(df)} points from the cluster {cluster}, cluster_id: {cluster_id}"
                 )
                 neighbors += df.to_dict(orient="records")
-                if len(df) > 0:
-                    break
         logger.info(f"Points neighborhood contains: {len(neighbors)} points")
         return neighbors
 

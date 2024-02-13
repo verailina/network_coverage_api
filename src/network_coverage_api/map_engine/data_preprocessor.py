@@ -38,7 +38,7 @@ def build_clustered_data(preprocessed_data: pd.DataFrame) -> pd.DataFrame:
 
     for operator in Operator:
         logger.info(f"Building clusters for {operator.name}")
-        operator_data = preprocessed_data.loc[operator.value]
+        operator_data = preprocessed_data.loc[operator.value].copy()
         searcher = MapSearcher(config, cluster_size=settings.CLUSTER_SIZE)
         operator_data["cluster"] = operator_data.apply(
             lambda row: searcher.get_cluster_id(
