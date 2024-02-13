@@ -19,8 +19,8 @@ logger = get_logger()
 NetworkCoverageRouter = APIRouter()
 map_data = MapData()
 
-POSTAL_CODE_PATTERN = r'^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$'
-STREET_NUMBER_PATTERN = r'^[1-9]+\d*\w*$'
+POSTAL_CODE_PATTERN = r"^(?:0[1-9]|[1-8]\d|9[0-8])\d{3}$"
+STREET_NUMBER_PATTERN = r"^[1-9]+\d*\w*$"
 
 
 @NetworkCoverageRouter.get("/", response_model=List[NetworkCoverage])
