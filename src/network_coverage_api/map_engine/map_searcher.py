@@ -2,10 +2,8 @@ import math
 from dataclasses import dataclass, astuple
 
 import pandas as pd
-from matplotlib import pyplot as plt
 from typing import List, Dict
-from network_coverage_api.api.schemas import Operator
-from network_coverage_api.utils import timeit, get_logger, get_data_path
+from network_coverage_api.utils import timeit, get_logger
 import geopy.distance
 from network_coverage_api.config import settings
 
@@ -39,60 +37,87 @@ class MapPointData:
     data: Dict | None
 
 
+@dataclass
+class MapConfig:
+    left_border: MapPoint
+    right_border: MapPoint
+    _width: float = None
+    _height: float = None
+
+    @property
+    def width(self) -> float:
+        if self._width is None:
+            self._width = self.right_border.longitude - self.left_border.longitude
+        return self._width
+
+    @property
+    def height(self) -> float:
+        if self._height is None:
+            self._height = self.right_border.latitude - self.left_border.latitude
+        return self._width
+
+    @staticmethod
+    def from_series(latitudes: pd.Series, longitudes: pd.Series) -> "MapConfig":
+        left_corner = MapPoint(latitudes.min(), longitudes.min())
+        right_corner = MapPoint(latitudes.max(), longitudes.max())
+        return MapConfig(left_corner, right_corner)
+
+
 class MapSearcher:
-    def __init__(self, data: pd.DataFrame, cluster_size: float = 0.5):
-        lat_range = SeriesRange(data["latitude"])
-        lon_range = SeriesRange(data["longitude"])
-        self.lat_range = lat_range
-        self.lon_range = lon_range
+    def __init__(self, map_config: MapConfig, cluster_size: float = 0.5):
+        self.map_config = map_config
         self.cluster_size = cluster_size
-        self.col_size = math.ceil(self.lon_range.range_len / self.cluster_size)
-        self.row_size = math.ceil(self.lat_range.range_len / self.cluster_size)
+        self.col_num = math.ceil(self.map_config.width / self.cluster_size)
+        self.row_num = math.ceil(self.map_config.height / self.cluster_size)
 
     def get_cluster_id(self, cluster: Cluster) -> int:
-        return cluster.row * self.row_size + cluster.column
+        return cluster.row * self.row_num + cluster.column
 
     def get_point_cluster(self, point: MapPoint) -> Cluster:
-        cluster_row = int((point.latitude - self.lat_range.min_val) // self.cluster_size)
-        cluster_col = int((point.longitude - self.lon_range.min_val) // self.cluster_size)
+        cluster_row = int((point.latitude - self.map_config.left_border.latitude) // self.cluster_size)
+        cluster_col = int((point.longitude - self.map_config.left_border.longitude) // self.cluster_size)
         return Cluster(row=cluster_row, column=cluster_col)
+
+    def get_border_distance(self, point: MapPoint, cluster: Cluster, axis: str = "latitude",
+                            border_id: int = 0) -> float:
+        if axis == "latitude":
+            return abs(point.latitude - ((cluster.row + border_id) * self.cluster_size +
+                                         self.map_config.left_border.latitude))
+        if axis == "longitude":
+            return abs(point.longitude - ((cluster.column + border_id) * self.cluster_size +
+                                          self.map_config.left_border.longitude))
 
     def get_target_clusters(self, point: MapPoint, cluster: Cluster) -> List[Cluster]:
         clusters = [cluster]
         intersection = 0.01
         # Close to the cluster right border
-        if (abs(point.latitude - ((cluster.row + 1.) * self.cluster_size + self.lat_range.min_val)) < intersection
-                and cluster.row + 1. < self.row_size):
+        if (self.get_border_distance(point, cluster, "latitude", 1) < intersection
+                and cluster.row + 1. < self.row_num):
             clusters.append((cluster.row + 1., cluster.column))
         # Close to the cluster left border
-        elif (abs(point.latitude - (cluster.row * self.cluster_size) + self.lat_range.min_val) < intersection
+        elif (self.get_border_distance(point, cluster, "latitude", 0) < intersection
               and cluster.row - 1. > 0):
             clusters.append((cluster.row - 1., cluster.column))
 
         # Close to the top cluster border
-        if (abs(point.longitude - ((cluster.column + 1.) * self.cluster_size) + self.lon_range.min_val) < intersection
-                and cluster.column + 1. < self.col_size):
+        if (self.get_border_distance(point, cluster, "longitude", 1) < intersection
+                and cluster.column + 1. < self.col_num):
             clusters.append((cluster.row, cluster.column + 1.))
         # Close to the bottom cluster border
-        elif (abs(point.longitude - (cluster.column * self.cluster_size) + self.lon_range.min_val) < intersection
+        elif (self.get_border_distance(point, cluster, "longitude", 0) < intersection
               and cluster.column - 1. > 0):
             clusters.append((cluster.row, cluster.column - 1.))
         return clusters
 
-    def visualize_clusters(self) -> None:
-        df = self.data.reset_index()
-        df.plot.scatter(x="longitude", y="latitude", c="cluster")
-        plt.show()
-
-    def get_point_neighbors(self, point: MapPoint) -> List[dict]:
+    def get_point_neighbors(self, point: MapPoint, data: pd.DataFrame) -> List[dict]:
         cluster = self.get_point_cluster(point)
         logger.info(f"Point cluster: {cluster}, id: {self.get_cluster_id(cluster)}")
         neighbors = []
         target_clusters = self.get_target_clusters(point, cluster)
         for cluster in target_clusters:
             cluster_id = self.get_cluster_id(cluster)
-            if cluster_id in self.data.index:
-                df = self.data.loc[cluster_id]
+            if cluster_id in data.index:
+                df = data.loc[cluster_id]
                 logger.info(f"Added {len(df)} points from the cluster {cluster}, cluster_id: {cluster_id}")
                 neighbors += df.to_dict(orient="records")
                 if len(df) > 0:
@@ -101,9 +126,9 @@ class MapSearcher:
         return neighbors
 
     @timeit
-    def find_closest_point_data(self, point: MapPoint) -> MapPointData:
+    def find_closest_point_data(self, point: MapPoint, data: pd.DataFrame) -> MapPointData:
         best_point, best_distance = None, None
-        neighbors = self.get_point_neighbors(point)
+        neighbors = self.get_point_neighbors(point, data)
         for neighbor in neighbors:
             neighbor_pos = (neighbor["latitude"], neighbor["longitude"])
             distance = geopy.distance.distance(astuple(point), neighbor_pos).km
@@ -115,30 +140,9 @@ class MapSearcher:
                             point=MapPoint(latitude=best_point.get("latitude"), longitude=best_point.get("longitude")))
 
 
-class MapSearcherFactory:
-    def __init__(self):
-        self.map_searchers = dict()
+def create_map_searcher() -> MapSearcher:
+    config = MapConfig(
+        left_border=MapPoint(latitude=settings.left_border_lat, longitude=settings.left_border_lon),
+        right_border=MapPoint(latitude=settings.right_border_lat, longitude=settings.right_border_lon))
+    return MapSearcher(config, cluster_size=settings.cluster_size)
 
-    def get_map_searcher(self, operator: Operator) -> MapSearcher:
-        if operator not in self.map_searchers:
-            data = self.load_datasource(operator)
-            self.map_searchers[operator] = MapSearcher(data, cluster_size=settings.CLUSTER_SIZE)
-
-        return self.map_searchers[operator]
-
-    @staticmethod
-    def load_datasource(operator: Operator) -> pd.DataFrame:
-        data_path = get_data_path(f"{operator.name}_datasource.csv")
-        if data_path.exists():
-            df = pd.read_csv(data_path, index_col=0)
-            df.index = df.index.astype(int)
-        else:
-            raise FileNotFoundError(f"Could not find {data_path}")
-        return df
-
-
-if __name__ == "__main__":
-    operator = Operator.Bouygue
-    data = MapSearcherFactory.load_datasource(operator)
-    cluster_builder = MapSearcher(data, cluster_size=settings.CLUSTER_SIZE)
-    cluster_builder.visualize_clusters()

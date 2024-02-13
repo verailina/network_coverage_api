@@ -3,12 +3,13 @@ from typing import List
 from network_coverage_api.utils import get_logger
 from network_coverage_api.api.schemas import Address, Operator, NetworkCoverage, NetworkCoverageDetailed, Location
 from network_coverage_api.api.geocoding import geocode, geocode_reverse
-from network_coverage_api.map_engine.map_searcher import MapSearcherFactory, MapPoint
+from network_coverage_api.map_engine.map_searcher import MapPoint, create_map_searcher
+from network_coverage_api.map_engine.map_data import MapData
 
 
 logger = get_logger()
-map_searcher_factory = MapSearcherFactory()
 NetworkCoverageRouter = APIRouter()
+map_data = MapData()
 
 
 @NetworkCoverageRouter.get("/", response_model=List[NetworkCoverage])
@@ -40,9 +41,11 @@ def _get_network_coverage(address: Address, detailed: bool = False) -> List[Netw
         return result
 
     target_point = MapPoint(latitude=location.latitude, longitude=location.longitude)
+    searcher = create_map_searcher()
+
     for operator in Operator:
-        searcher = map_searcher_factory.get_map_searcher(operator)
-        closest_data = searcher.find_closest_point_data(target_point)
+        data = map_data.get_operator_data(operator)
+        closest_data = searcher.find_closest_point_data(target_point, data)
         logger.info(f"Network coverage for {target_point}: {closest_data}")
         if closest_data is None:
             logger.info(f"No {operator.name} data found for {address}")
