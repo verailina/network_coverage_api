@@ -27,5 +27,11 @@ class MapData:
 
     def visualize_clusters(self, operator: Operator) -> None:
         df = self.get_operator_data(operator)
+        df = df.reset_index()
         df.plot.scatter(x="longitude", y="latitude", c="cluster")
         plt.show()
+
+
+if __name__ == "__main__":
+    map_data = MapData()
+    map_data.visualize_clusters(Operator.Free)

@@ -1,7 +1,7 @@
 from pyproj import Transformer
 from geopy.geocoders import BANFrance
 from geopy import Location, Point
-from network_coverage_api.api.schemas import Operator, Address
+from network_coverage_api.api.schemas import Address
 from network_coverage_api.utils import get_logger, timeit
 from geopy.exc import GeocoderServiceError
 
