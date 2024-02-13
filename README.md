@@ -195,8 +195,8 @@ map_data.visualize_clusters(Operator.Free)
 ```
 For a more visual representation, let's see the clusters for `cluster_size=2.0`:
 
-![clusters_for_2.0]([file](https://github.com/verailina/network_coverage_api/blob/main/src/network_coverage_api/data/images/cluster_size_2.png).
+![clusters_for_2.0](https://github.com/verailina/network_coverage_api/blob/main/src/network_coverage_api/data/images/cluster_size_2.png).
 
 For the recommended default `cluster_size=0.5`, the cluster will look like this:
 
-![clusters_for_0_5]([file](https://github.com/verailina/network_coverage_api/blob/main/src/network_coverage_api/data/images/cluster_size_0_5.png).
+![clusters_for_0_5](https://github.com/verailina/network_coverage_api/blob/main/src/network_coverage_api/data/images/cluster_size_0_5.png).
