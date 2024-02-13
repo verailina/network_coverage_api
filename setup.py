@@ -25,7 +25,7 @@ setup_params = dict(
     install_requires=[],  # Optional
     extras_require={
         "test": ["pytest"],
-    }
+    },
 )
 
 if __name__ == "__main__":

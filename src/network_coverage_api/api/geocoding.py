@@ -1,4 +1,3 @@
-
 from pyproj import Transformer
 from geopy.geocoders import BANFrance
 from geopy import Location, Point
@@ -20,11 +19,15 @@ def geocode(address: Address, n_tries: int = 5) -> Location | None:
             else:
                 return result[0]
         except GeocoderServiceError as e:
-            logger.error(f"Failed to geocode address {address.full_address}, error: {e}")
+            logger.error(
+                f"Failed to geocode address {address.full_address}, error: {e}"
+            )
 
 
 @timeit
-def geocode_reverse(latitude: float, longitude: float, n_tries: int = 5) -> Location | None:
+def geocode_reverse(
+    latitude: float, longitude: float, n_tries: int = 5
+) -> Location | None:
     geocoder = BANFrance()
     for _ in range(n_tries):
         try:
@@ -34,7 +37,9 @@ def geocode_reverse(latitude: float, longitude: float, n_tries: int = 5) -> Loca
             else:
                 return result[0]
         except GeocoderServiceError as e:
-            logger.error(f"Failed to find address for {(latitude, longitude)}, error: {e}")
+            logger.error(
+                f"Failed to find address for {(latitude, longitude)}, error: {e}"
+            )
 
 
 def lambert93_to_gps(x: float, y: float):
@@ -46,5 +51,3 @@ def lambert93_to_gps(x: float, y: float):
     transformer = Transformer.from_crs(LAMBERT93_CODE, WGS84_CODE, always_xy=True)
     longitude, latitude = transformer.transform(x, y)
     return longitude, latitude
-
-

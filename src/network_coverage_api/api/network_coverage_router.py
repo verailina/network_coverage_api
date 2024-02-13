@@ -1,7 +1,13 @@
 from fastapi import APIRouter
 from typing import List
 from network_coverage_api.utils import get_logger
-from network_coverage_api.api.schemas import Address, Operator, NetworkCoverage, NetworkCoverageDetailed, Location
+from network_coverage_api.api.schemas import (
+    Address,
+    Operator,
+    NetworkCoverage,
+    NetworkCoverageDetailed,
+    Location,
+)
 from network_coverage_api.api.geocoding import geocode, geocode_reverse
 from network_coverage_api.map_engine.map_searcher import MapPoint, create_map_searcher
 from network_coverage_api.map_engine.map_data import MapData
@@ -14,25 +20,39 @@ map_data = MapData()
 
 @NetworkCoverageRouter.get("/", response_model=List[NetworkCoverage])
 async def get_network_coverage(
-        street_number: str | None = None,
-        street_name: str | None = None,
-        city: str | None = None,
-        postal_code: str | None = None):
-    address = Address(street_name=street_name, street_number=street_number, city=city, postal_code=postal_code)
+    street_number: str | None = None,
+    street_name: str | None = None,
+    city: str | None = None,
+    postal_code: str | None = None,
+):
+    address = Address(
+        street_name=street_name,
+        street_number=street_number,
+        city=city,
+        postal_code=postal_code,
+    )
     return _get_network_coverage(address)
 
 
 @NetworkCoverageRouter.get("/detailed/", response_model=List[NetworkCoverageDetailed])
 async def get_detailed_network_coverage(
-        street_number: str | None = None,
-        street_name: str | None = None,
-        city: str | None = None,
-        postal_code: str | None = None):
-    address = Address(street_name=street_name, street_number=street_number, city=city, postal_code=postal_code)
+    street_number: str | None = None,
+    street_name: str | None = None,
+    city: str | None = None,
+    postal_code: str | None = None,
+):
+    address = Address(
+        street_name=street_name,
+        street_number=street_number,
+        city=city,
+        postal_code=postal_code,
+    )
     return _get_network_coverage(address, detailed=True)
 
 
-def _get_network_coverage(address: Address, detailed: bool = False) -> List[NetworkCoverage]:
+def _get_network_coverage(
+    address: Address, detailed: bool = False
+) -> List[NetworkCoverage]:
     location = geocode(address)
     result = []
     logger.info(f"Geocoded address: {address}: {location}")
@@ -63,14 +83,17 @@ def _get_network_coverage(address: Address, detailed: bool = False) -> List[Netw
             network_coverage["target_location"] = Location(
                 address=location.address,
                 latitude=location.latitude,
-                longitude=location.longitude
+                longitude=location.longitude,
             )
-            latitude, longitude = closest_data.point.latitude, closest_data.point.longitude
+            latitude, longitude = (
+                closest_data.point.latitude,
+                closest_data.point.longitude,
+            )
             neighbor_location = geocode_reverse(latitude, longitude)
             network_coverage["closest_location"] = Location(
                 address=neighbor_location.address if neighbor_location else None,
                 latitude=latitude,
-                longitude=longitude
+                longitude=longitude,
             )
             result.append(NetworkCoverageDetailed(**network_coverage))
     return result
