@@ -55,8 +55,7 @@ Response body:
         "2G": true,
         "3G": true,
         "4G": false
-      },
-      ...
+      }
     ]
 ```
  - `network_coverage/detailed` example:
@@ -84,8 +83,7 @@ Response:
       "longitude": 2.354464,
       "address": "11 Rue des Archives 75004 Paris"
     }
-  },
-  ...
+  }
 ]
 ```
 
