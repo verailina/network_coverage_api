@@ -56,24 +56,7 @@ Response body:
         "3G": true,
         "4G": false
       },
-      {
-        "operator": "SFR",
-        "2G": false,
-        "3G": true,
-        "4G": false
-      },
-      {
-        "operator": "Free",
-        "2G": false,
-        "3G": true,
-        "4G": true
-      },
-      {
-        "operator": "Bouygue",
-        "2G": true,
-        "3G": false,
-        "4G": false
-      }
+      ...
     ]
 ```
  - `network_coverage/detailed` example:
@@ -102,62 +85,12 @@ Response:
       "address": "11 Rue des Archives 75004 Paris"
     }
   },
-  {
-    "operator": "SFR",
-    "2G": false,
-    "3G": true,
-    "4G": false,
-    "distance": 0.14889523817348643,
-    "closest_location": {
-      "latitude": 48.857,
-      "longitude": 2.3529,
-      "address": "29 Rue de Rivoli 75004 Paris"
-    },
-    "target_location": {
-      "latitude": 48.857853,
-      "longitude": 2.354464,
-      "address": "11 Rue des Archives 75004 Paris"
-    }
-  },
-  {
-    "operator": "Free",
-    "2G": false,
-    "3G": true,
-    "4G": true,
-    "distance": 0.11309971452254321,
-    "closest_location": {
-      "latitude": 48.8571,
-      "longitude": 2.3555,
-      "address": "4 Rue de la Verrerie 75004 Paris"
-    },
-    "target_location": {
-      "latitude": 48.857853,
-      "longitude": 2.354464,
-      "address": "11 Rue des Archives 75004 Paris"
-    }
-  },
-  {
-    "operator": "Bouygue",
-    "2G": true,
-    "3G": false,
-    "4G": false,
-    "distance": 0.06367355074813373,
-    "closest_location": {
-      "latitude": 48.8578,
-      "longitude": 2.3536,
-      "address": "38 Rue de la Verrerie 75004 Paris"
-    },
-    "target_location": {
-      "latitude": 48.857853,
-      "longitude": 2.354464,
-      "address": "11 Rue des Archives 75004 Paris"
-    }
-  }
+  ...
 ]
 ```
 
 ## Algorithm
-"The network coverage calculation process works as follows:
+The network coverage calculation process works as follows:
 
 1. Obtain GPS coordinates for the input address using geopy.geocoders.BANFrance.
 2. Identify the point closest to the target coordinates in the data source file and return the coverage information 

@@ -10,6 +10,7 @@ logger = get_logger()
 
 @timeit
 def geocode(address: Address, n_tries: int = 5) -> Location | None:
+    """Get GPS coordinates for the given address"""
     geocoder = BANFrance()
     for _ in range(n_tries):
         try:
@@ -28,6 +29,7 @@ def geocode(address: Address, n_tries: int = 5) -> Location | None:
 def geocode_reverse(
     latitude: float, longitude: float, n_tries: int = 5
 ) -> Location | None:
+    """Find an address for the given latitude and longitude coordinates."""
     geocoder = BANFrance()
     for _ in range(n_tries):
         try:
@@ -44,6 +46,7 @@ def geocode_reverse(
 
 def lambert93_to_gps(x: float, y: float):
     """
+    Convert a Lambert93 coordinates into GPS coordinates.
     For ESPG codes see docs: https://spatialreference.org/
     """
     LAMBERT93_CODE = "EPSG:2154"

@@ -6,6 +6,10 @@ from network_coverage_api.utils import get_data_path
 
 
 class MapData:
+    """
+    Provides a clustered datasource for each operator.
+    """
+
     def __init__(self):
         self.operator_data = dict()
 

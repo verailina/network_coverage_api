@@ -23,13 +23,6 @@ class Cluster:
     column: int
 
 
-class SeriesRange:
-    def __init__(self, series: pd.Series):
-        self.min_val = series.min()
-        self.max_val = series.max()
-        self.range_len = self.max_val - self.min_val + 1
-
-
 @dataclass
 class MapPointData:
     point: MapPoint
@@ -64,6 +57,8 @@ class MapConfig:
 
 
 class MapSearcher:
+    """Computes the clusters and performs a search into the clustered data."""
+
     def __init__(self, map_config: MapConfig, cluster_size: float = 0.5):
         self.map_config = map_config
         self.cluster_size = cluster_size
@@ -90,6 +85,7 @@ class MapSearcher:
         axis: str = "latitude",
         border_id: int = 0,
     ) -> float:
+        """For a given point computes the distance to its cluster boarders."""
         if axis == "latitude":
             return abs(
                 point.latitude
@@ -108,6 +104,9 @@ class MapSearcher:
             )
 
     def get_target_clusters(self, point: MapPoint, cluster: Cluster) -> List[Cluster]:
+        """Find a cluster for the target point. If point is close to a cluster border consider
+        a neighbor clusters.
+        """
         clusters = [cluster]
         intersection = 0.01
         # Close to the cluster right border
@@ -138,6 +137,7 @@ class MapSearcher:
         return clusters
 
     def get_point_neighbors(self, point: MapPoint, data: pd.DataFrame) -> List[dict]:
+        """Get neighbor data points for a target point."""
         cluster = self.get_point_cluster(point)
         logger.info(f"Point cluster: {cluster}, id: {self.get_cluster_id(cluster)}")
         neighbors = []
@@ -157,6 +157,7 @@ class MapSearcher:
     def find_closest_point_data(
         self, point: MapPoint, data: pd.DataFrame
     ) -> MapPointData:
+        """For a given point, find the closest point in the data."""
         best_point, best_distance = None, None
         neighbors = self.get_point_neighbors(point, data)
         for neighbor in neighbors:
@@ -179,6 +180,7 @@ class MapSearcher:
 
 
 def create_map_searcher() -> MapSearcher:
+    """Create an instance of a MapSearcher based on settings.toml config."""
     config = MapConfig(
         left_border=MapPoint(
             latitude=settings.left_border_lat, longitude=settings.left_border_lon
