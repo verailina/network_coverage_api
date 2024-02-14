@@ -149,7 +149,10 @@ class MapSearcher:
                 logger.info(
                     f"Added {len(df)} points from the cluster {cluster}, cluster_id: {cluster_id}"
                 )
-                neighbors += df.to_dict(orient="records")
+                if isinstance(df, pd.Series):
+                    neighbors += [df.to_dict()]
+                else:
+                    neighbors += df.to_dict(orient="records")
         logger.info(f"Points neighborhood contains: {len(neighbors)} points")
         return neighbors
 

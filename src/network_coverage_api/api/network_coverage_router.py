@@ -30,17 +30,7 @@ async def get_network_coverage(
     postal_code: Annotated[str | None, Query(pattern=POSTAL_CODE_PATTERN)] = None,
     city: str | None = None,
 ):
-    """Get network coverage information based on address.
-
-    Args:
-        street_number (str | None): The street number of the address.
-        street_name (str | None): The name of the street.
-        postal_code (str | None): The postal code of the address.
-        city (str | None): The city of the address.
-
-    Returns:
-        List[NetworkCoverage]: List of network coverage information.
-    """
+    """Get network coverage information based on address."""
     address = Address(
         street_name=street_name,
         street_number=street_number,
@@ -58,17 +48,7 @@ async def get_detailed_network_coverage(
     city: str | None = None,
 ):
     """Get detailed network coverage information with an additional details about location details
-    for the target point and the closest point found in the network data.
-
-    Args:
-        street_number (str | None): The street number of the address.
-        street_name (str | None): The name of the street.
-        postal_code (str | None): The postal code of the address.
-        city (str | None): The city of the address.
-
-    Returns:
-        List[NetworkCoverageDetailed]: List of detailed network coverage information.
-    """
+    for the target point and the closest point found in the network data."""
     address = Address(
         street_name=street_name,
         street_number=street_number,

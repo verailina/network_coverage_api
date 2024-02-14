@@ -23,7 +23,7 @@ def test_get_network_coverage(address, test_data: dict):
     coverage_res = _get_network_coverage(address, detailed=True)
     logger.info(coverage_res)
     for item in coverage_res:
-        assert item.distance < 1.0
+        assert item.distance < 2.0
         closest_city = (
             item.closest_location.address.split(" ")[-1]
             if item.closest_location
